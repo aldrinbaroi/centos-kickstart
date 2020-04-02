@@ -4,9 +4,18 @@ source create-iso.conf
 source templates/grub.conf.template
 source templates/isolinux.cfg.template
 source templates/ks.cfg.template
+source dependency-manager
 
 generate_GrubConf ${CENTOS_VERSION} ${GRUB_CONF_FILE} 
 generate_IsolinuxCfg ${CENTOS_VERSION} ${ISOLINUX_CFG_FILE} 
 generate_KsCfg ${CENTOS_VERSION} ${KS_CFG_FILE} ${TIMEZONE} ${HOSTNAME} "${ROOT_PASSWORD}" ${IP_ASSIGNMENT} ${IP_ADDRESS} ${NETMASK} ${GATEWAY} ${NAMESERVERS}
+
+
+SUDO=""
+USER=$(whoami)
+if [ "$USER" != "root" ]; then
+	SUDO="sudo"
+fi
+
 
 #::END::
