@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# grub.conf template file
+#
+
+function generate_GrubConf
+{
+	local _CENTOS_VERSION=${1}
+	local _GRUB_CONF_FILE=${2}
+
+	cat <<-EOF > ${_GRUB_CONF_FILE}
+	default=1
+	splashimage=@SPLASHPATH@
+	timeout 3
+	hiddenmenu
+	title Install CentOS ${_CENTOS_VERSION}
+	    findiso
+	    kernel @KERNELPATH@ @ROOT@ quiet
+	    initrd @INITRDPATH@
+	title Test this media & install CentOS ${_CENTOS_VERSION}
+	    findiso
+	    kernel @KERNELPATH@ @ROOT@ rd.live.check quiet
+	    initrd @INITRDPATH@
+	EOF
+}
+
+#::END::

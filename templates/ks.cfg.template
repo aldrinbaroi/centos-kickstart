@@ -1,0 +1,127 @@
+#!/bin/bash
+#
+# ks.cfg template file
+# 
+
+generate_KsCfg()
+{
+	local _CENTOS_VERSION=${1}
+	local _KS_CFG_FILE=${2}
+	local _TIMEZONE=${3}
+	local _HOSTNAME=${4}
+	local _ROOT_PASSWORD=${5}
+	local _IP_ASSIGNMENT=${6}
+	local _IP_ADDRESS=${7}
+	local _NETMASK=${8}
+	local _GATEWAY=${9}
+	local _NAMESERVERS=${10}
+
+	echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+	echo "CentOS Ver   : ${_CENTOS_VERSION}"
+	echo "ks.cfg file  : ${_KS_CFG_FILE}"
+	echo "Timezone     : ${_TIMEZONE}"
+	echo "Host Name    : ${_HOSTNAME}"
+	echo "Root User PW : ${_ROOT_PASSWORD}"
+	echo "IP Assignment: ${_IP_ASSIGNMENT}"
+	echo "IP Address   : ${_IP_ADDRESS}"
+	echo "Netmask      : ${_NETMASK}"
+	echo "Gateway      : ${_GATEWAY}"
+	echo "Nameservers  : ${_NAMESERVERS}"
+	echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
+	cat <<-EOF_1 > ${_KS_CFG_FILE}
+		# Kickstart file for CentOS ${_CENTOS_VERSION}
+
+		# System authorization information
+		auth --enableshadow --passalgo=sha512
+
+		# Clear the Master Boot Record
+		zerombr
+
+		# Clear partition information
+		clearpart --all --initlabel
+
+		# Use CDROM installation media
+		cdrom
+
+		# Use text mode install
+		text
+
+		# Run the Setup Agent on first boot
+		firstboot --enable
+
+		# Only use SDA for target disk
+		ignoredisk --only-use=sda
+
+		# Keyboard layouts
+		keyboard --vckeymap=us --xlayouts='us'
+
+		# System language
+		lang en_US.UTF-8
+		EOF_1
+
+	if [ "${IP_ASSIGNMENT}" == "dynamic" ]; then
+		cat <<-EOF_2 >> ${_KS_CFG_FILE} 
+			network --bootproto=dynamic --device=link --noipv6 --onboot=on --activate --hostname=${_HOSTNAME}
+			EOF_2
+	elif [ "${IP_ASSIGNMENT}" == "static" ]; then
+		cat <<-EOF_3 >> ${_KS_CFG_FILE} 
+			network  --bootproto=static --device=link --noipv6 --onboot=on --activate --gateway=${_GATEWAY} --ip=${_IP_ADDRESS} --netmask=${_NETMASK} --nameserver=${_NAMESERVERS} --hostname=${HOSTNAME}
+			EOF_3
+	else
+		abort "[ks.cfg.template] ERROR: Invalid IP assignment type: [${_IP_ASSIGNMENT}]"
+	fi
+
+	cat <<-EOF_4 >> ${_KS_CFG_FILE} 
+		# Root password (default password: centos)
+		rootpw --iscrypted ${ROOT_PASSWORD}
+
+		# Normal user
+		# NONE ADDED
+
+		# System services
+		services --enabled="chronyd"
+
+		# KDump -- disable it
+		services --disabled kdump
+
+		# System timezone
+		timezone ${TIMEZONE} --isUtc --nontp
+
+		# System bootloader configuration
+		bootloader --location=mbr --boot-drive=sda
+
+		# Partition clearing information
+		clearpart --all --initlabel --drives=sda
+		autopart --type=lvm --fstype=ext4 --nohome
+
+		# X Windows System -- do not install
+		skipx 
+
+		# Install packages
+		%packages
+		@^minimal
+		@core
+		openssh-server
+		%end
+
+		%addon com_redhat_kdump --disable --reserve-mb='auto'
+		%end
+
+		%anaconda
+		pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+		pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+		pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+		%end
+	
+		# Post Install Tasks
+		%post 
+		%end
+
+		# For VM installation
+		reboot --eject
+		EOF_4
+
+}
+
+#::END::
