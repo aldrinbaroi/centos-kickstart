@@ -11,10 +11,10 @@ __getFileFromGitRepo()
     local fileName=${4}
     local saveDirectory=${5}
     local resourceUrl="https://raw.githubusercontent.com/${repoOwner}/${repoName}/${releaseTag}/${fileName}"
-    curl -s -o "${saveDirectory}/${fileName}" "${resourceUrl}" 
+    curl -f -s -o "${saveDirectory}/${fileName}" "${resourceUrl}" 
     if (( $? )); then
         echo "Failed to get [${fileName}] file from the repository."
-        exit 1
+        return 1
     fi
 }
 
@@ -32,14 +32,13 @@ __loadDependencies()
         repoName=${dependencyRec[1]}
         releaseTag=${dependencyRec[2]}
         fileName=${dependencyRec[3]}
-        if [ -f "lib/${fileName}" ]; then
-            continue
-        fi        
-        echo "Loading dependency: ${fileName}"
-        __getFileFromGitRepo "${repoOwner}" "${repoName}" "${releaseTag}" "${fileName}" "${saveDirectory}" 
-        if (( $? )); then
-            echo "Failed to retrieve dependency: ${fileName}.  Aborting..."
-            exit 1
+        if [ ! -f "lib/${fileName}" ]; then    
+            echo "Loading dependency: ${fileName}"
+            __getFileFromGitRepo "${repoOwner}" "${repoName}" "${releaseTag}" "${fileName}" "${saveDirectory}" 
+            if (( $? )); then
+                echo "Failed to retrieve dependency: ${fileName}.  Aborting..."
+                exit 1
+            fi
         fi
         source "lib/${fileName}"
     done < dependencies.list  
