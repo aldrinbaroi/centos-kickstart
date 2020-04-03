@@ -8,6 +8,7 @@ function generate_IsolinuxCfg
 	local _CENTOS_VERSION=${1}
 	local _ISOLINUX_CFG_FILE=${2}
 
+	log "Generating isolinux.cfg file..."
 	cat <<-EOF > ${_ISOLINUX_CFG_FILE}
 		default vesamenu.c32
     		timeout 50
@@ -134,6 +135,9 @@ function generate_IsolinuxCfg
 
 		menu end
 	EOF
+	if (( $? )); then
+		abort "Failed to generate isolinux.cfg file."
+	fi
 }
 
 #::END::

@@ -16,19 +16,17 @@ generate_KsCfg()
 	local _GATEWAY=${9}
 	local _NAMESERVERS=${10}
 
-	echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-	echo "CentOS Ver   : ${_CENTOS_VERSION}"
-	echo "ks.cfg file  : ${_KS_CFG_FILE}"
-	echo "Timezone     : ${_TIMEZONE}"
-	echo "Host Name    : ${_HOSTNAME}"
-	echo "Root User PW : ${_ROOT_PASSWORD}"
-	echo "IP Assignment: ${_IP_ASSIGNMENT}"
-	echo "IP Address   : ${_IP_ADDRESS}"
-	echo "Netmask      : ${_NETMASK}"
-	echo "Gateway      : ${_GATEWAY}"
-	echo "Nameservers  : ${_NAMESERVERS}"
-	echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
+	log "Generating ks.cfg file..."
+	log "    CentOS Ver   : ${_CENTOS_VERSION}"
+	log "    ks.cfg file  : ${_KS_CFG_FILE}"
+	log "    Timezone     : ${_TIMEZONE}"
+	log "    Host Name    : ${_HOSTNAME}"
+	log "    Root User PW : ${_ROOT_PASSWORD}"
+	log "    IP Assignment: ${_IP_ASSIGNMENT}"
+	log "    IP Address   : ${_IP_ADDRESS}"
+	log "    Netmask      : ${_NETMASK}"
+	log "    Gateway      : ${_GATEWAY}"
+	log "    Nameservers  : ${_NAMESERVERS}"
 	cat <<-EOF_1 > ${_KS_CFG_FILE}
 		# Kickstart file for CentOS ${_CENTOS_VERSION}
 
@@ -59,15 +57,23 @@ generate_KsCfg()
 		# System language
 		lang en_US.UTF-8
 		EOF_1
-
+	if (( $? )); then
+		abort "Failed to generate ks.cfg file."
+	fi
 	if [ "${IP_ASSIGNMENT}" == "dynamic" ]; then
 		cat <<-EOF_2 >> ${_KS_CFG_FILE} 
 			network --bootproto=dynamic --device=link --noipv6 --onboot=on --activate --hostname=${_HOSTNAME}
 			EOF_2
+		if (( $? )); then
+			abort "Failed to generate ks.cfg file."
+		fi
 	elif [ "${IP_ASSIGNMENT}" == "static" ]; then
 		cat <<-EOF_3 >> ${_KS_CFG_FILE} 
 			network  --bootproto=static --device=link --noipv6 --onboot=on --activate --gateway=${_GATEWAY} --ip=${_IP_ADDRESS} --netmask=${_NETMASK} --nameserver=${_NAMESERVERS} --hostname=${HOSTNAME}
 			EOF_3
+		if (( $? )); then
+			abort "Failed to generate ks.cfg file."
+		fi
 	else
 		abort "[ks.cfg.template] ERROR: Invalid IP assignment type: [${_IP_ASSIGNMENT}]"
 	fi
@@ -121,7 +127,9 @@ generate_KsCfg()
 		# For VM installation
 		reboot --eject
 		EOF_4
-
+		if (( $? )); then
+			abort "Failed to generate ks.cfg file."
+		fi
 }
 
 #::END::

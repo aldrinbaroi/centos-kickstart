@@ -8,6 +8,7 @@ function generate_GrubConf
 	local _CENTOS_VERSION=${1}
 	local _GRUB_CONF_FILE=${2}
 
+	log "Generating grub.conf file..."
 	cat <<-EOF > ${_GRUB_CONF_FILE}
 	default=1
 	splashimage=@SPLASHPATH@
@@ -22,6 +23,9 @@ function generate_GrubConf
 	    kernel @KERNELPATH@ @ROOT@ rd.live.check quiet
 	    initrd @INITRDPATH@
 	EOF
+	if (( $? )); then
+		abort "Failed to generate grub.conf file."
+	fi
 }
 
 #::END::
