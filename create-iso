@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# create-iso: Creates CentOS Kickstart ISO file from Cent0S 7 ISO file
+#
 
 source create-iso.conf
 source templates/grub.conf.template
@@ -6,16 +9,60 @@ source templates/isolinux.cfg.template
 source templates/ks.cfg.template
 source dependency-manager
 
-generate_GrubConf ${CENTOS_VERSION} ${GRUB_CONF_FILE} 
-generate_IsolinuxCfg ${CENTOS_VERSION} ${ISOLINUX_CFG_FILE} 
-generate_KsCfg ${CENTOS_VERSION} ${KS_CFG_FILE} ${TIMEZONE} ${HOSTNAME} "${ROOT_PASSWORD}" ${IP_ASSIGNMENT} ${IP_ADDRESS} ${NETMASK} ${GATEWAY} ${NAMESERVERS}
-
-
-SUDO=""
-USER=$(whoami)
-if [ "$USER" != "root" ]; then
-	SUDO="sudo"
+clear
+log "Starting CentOS ${CENTOS_VERSION} Kickstart ISO generation process..."
+readonly GENERATED_FILES_DIRECTORY=$(realpath "${WORK_DIRECTORY}/generated_files")
+readonly ISO_UNPACK_DIRECTORY=$(realpath "${WORK_DIRECTORY}/iso_unpack_dir")
+readonly ISO_MOUNT_POINT=$(realpath "${WORK_DIRECTORY}/iso_mount_point")
+readonly SOURCE_IMAGE_FILE=$(realpath "${SOURCE_IMAGE_DIR}/${SOURCE_IMAGE_NAME}.iso")
+readonly KICKSTART_ISO_DIRECTORY=$(realpath "${WORK_DIRECTORY}/kickstart_iso")
+readonly KICKSTART_ISO_FILE=$(realpath "${KICKSTART_ISO_DIRECTORY}/${KICKSTART_IMAGE_NAME}.iso")
+if [ ! -f ${SOURCE_IMAGE_FILE} ]; then
+	abort "Source ISO file [${SOURCE_IMAGE_FILE}] doesn't exist."
 fi
-
+log "Source ISO file: ${SOURCE_IMAGE_FILE}"
+log "Unmouting mount point if already mounted..."
+if (( $(isMounted ${ISO_MOUNT_POINT}) )); then
+	unmount ${ISO_MOUNT_POINT}
+fi
+log "Creating work directory..."
+createDirectory ${WORK_DIRECTORY}
+log "Clearing work directory if not empty..."
+clearDirectory ${WORK_DIRECTORY}
+log "Creating generated files directory..."
+createDirectory ${GENERATED_FILES_DIRECTORY}
+generate_GrubConf ${CENTOS_VERSION} ${GENERATED_FILES_DIRECTORY}/${GRUB_CONF_FILE}
+generate_IsolinuxCfg ${CENTOS_VERSION} ${GENERATED_FILES_DIRECTORY}/${ISOLINUX_CFG_FILE}
+generate_KsCfg ${CENTOS_VERSION} ${GENERATED_FILES_DIRECTORY}/${KS_CFG_FILE} ${TIMEZONE} ${HOSTNAME} "${ROOT_PASSWORD}" ${IP_ASSIGNMENT} ${IP_ADDRESS} ${NETMASK} ${GATEWAY} ${NAMESERVERS}
+log "Creating ISO unpack directory..."
+createDirectory ${ISO_UNPACK_DIRECTORY}
+log "Creating mount point directory..."
+createDirectory ${ISO_MOUNT_POINT}
+log "Creating Kickstart ISO directory..."
+createDirectory ${KICKSTART_ISO_DIRECTORY}
+log "Mounting ISO image file..."
+mountIso ${SOURCE_IMAGE_FILE} ${ISO_MOUNT_POINT}
+log "Copying files from source image file to work directory..."
+push_dir ${ISO_MOUNT_POINT} 
+sudo scp -r . ${ISO_UNPACK_DIRECTORY}
+pop_dir
+log "Unmounting ISO image file..."
+unmount ${ISO_MOUNT_POINT}
+push_dir ${ISO_UNPACK_DIRECTORY} 
+sudo chown -R aldrin:aldrin *
+pop_dir
+log "Copying custom grub.conf file to target grub.conf file..."
+scp ${GENERATED_FILES_DIRECTORY}/${GRUB_CONF_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${GRUB_CONF_FILE}
+log "Copying custom isolinux.cfg file to target isolinux.cfg file..."
+scp ${GENERATED_FILES_DIRECTORY}/${ISOLINUX_CFG_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${ISOLINUX_CFG_FILE}
+log "Copying custom kickstart file to target kickstart file..."
+scp ${GENERATED_FILES_DIRECTORY}/${KS_CFG_FILE}  ${ISO_UNPACK_DIRECTORY}/${KS_CFG_FILE}
+log "Generating kickstart ISO file..."
+push_dir ${ISO_UNPACK_DIRECTORY}
+genisoimage -o ${KICKSTART_ISO_FILE} -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -J -R -v -T -V "CentOS 7 x86_64" .  2>&1 | logPipe
+pop_dir
+log "Adding MD5 hash code to target ISO file."
+implantisomd5 ${KICKSTART_ISO_FILE} 2>&1 | logPipe
+log "Finished creating custom ISO file: ${KICKSTART_ISO_FILE}"
 
 #::END::
