@@ -3,3 +3,5 @@ isolinux.cfg
 ks.cfg
 *.swp
 lib/*
+kickstart-iso
+work
