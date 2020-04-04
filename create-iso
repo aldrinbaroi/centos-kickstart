@@ -11,6 +11,12 @@ source dependency-manager
 
 clear
 log "Starting CentOS ${CENTOS_VERSION} Kickstart ISO generation process..."
+log "Prompting to enter root user password for the kickstart ISO..."
+rootPassword=$(getPassword)
+if (( $? )); then
+	abort "Root password is required to setup root user for the kickstart ISO image."
+fi
+readonly ROOT_PASSWORD=$(echo -n "${rootPassword}" | openssl passwd -6 -stdin)
 readonly GENERATED_FILES_DIRECTORY=$(realpath "${WORK_DIRECTORY}/generated_files")
 readonly ISO_UNPACK_DIRECTORY=$(realpath "${WORK_DIRECTORY}/iso_unpack_dir")
 readonly ISO_MOUNT_POINT=$(realpath "${WORK_DIRECTORY}/iso_mount_point")
