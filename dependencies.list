@@ -1,2 +1,4 @@
-aldrinbaroi,bash-lib-logging,0.2,bash-lib-logging
-aldrinbaroi,bash-lib-misc,0.1.2,bash-lib-misc
+aldrinbaroi,bash-lib,master,bash-lib-logging
+aldrinbaroi,bash-lib,master,bash-lib-user
+aldrinbaroi,bash-lib,master,bash-lib-misc
+aldrinbaroi,bash-lib,master,bash-lib-execmd
