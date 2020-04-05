@@ -22,7 +22,15 @@ readonly ISO_UNPACK_DIRECTORY=$(realpath "${WORK_DIRECTORY}/iso_unpack_dir")
 readonly ISO_MOUNT_POINT=$(realpath "${WORK_DIRECTORY}/iso_mount_point")
 readonly SOURCE_IMAGE_FILE=$(realpath "${SOURCE_IMAGE_DIR}/${SOURCE_IMAGE_NAME}.iso")
 readonly KICKSTART_ISO_DIRECTORY=$(realpath "${WORK_DIRECTORY}/kickstart_iso")
-readonly KICKSTART_ISO_FILE=$(realpath "${KICKSTART_ISO_DIRECTORY}/${KICKSTART_IMAGE_NAME}.iso")
+readonly KICKSTART_ISO_FILE=${KICKSTART_ISO_DIRECTORY}/${KICKSTART_IMAGE_NAME}.iso
+log ""
+log "Generated files directory: ${GENERATED_FILES_DIRECTORY}"
+log "ISO unpack directory     : ${ISO_UNPACK_DIRECTORY}"
+log "ISO mount point          : ${ISO_MOUNT_POINT}"
+log "Source image file        : ${SOURCE_IMAGE_FILE}"
+log "Kickstart ISO directory  : ${KICKSTART_ISO_DIRECTORY}"
+log "Kickstart ISO file       : ${KICKSTART_ISO_FILE}"
+log ""
 if [ ! -f ${SOURCE_IMAGE_FILE} ]; then
 	abort "Source ISO file [${SOURCE_IMAGE_FILE}] doesn't exist."
 fi
@@ -50,25 +58,25 @@ log "Mounting ISO image file..."
 mountIso ${SOURCE_IMAGE_FILE} ${ISO_MOUNT_POINT}
 log "Copying files from source image file to work directory..."
 push_dir ${ISO_MOUNT_POINT} 
-sudo scp -r . ${ISO_UNPACK_DIRECTORY}
+exeCmd "${SUDO} scp -r . ${ISO_UNPACK_DIRECTORY}"
 pop_dir
 log "Unmounting ISO image file..."
 unmount ${ISO_MOUNT_POINT}
 push_dir ${ISO_UNPACK_DIRECTORY} 
-sudo chown -R aldrin:aldrin *
+exeCmd "${SUDO} chown -R ${CURRENT_USER}:${CURRENT_USER_GROUP} *"
 pop_dir
 log "Copying custom grub.conf file to target grub.conf file..."
-scp ${GENERATED_FILES_DIRECTORY}/${GRUB_CONF_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${GRUB_CONF_FILE}
+exeCmd "scp ${GENERATED_FILES_DIRECTORY}/${GRUB_CONF_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${GRUB_CONF_FILE}"
 log "Copying custom isolinux.cfg file to target isolinux.cfg file..."
-scp ${GENERATED_FILES_DIRECTORY}/${ISOLINUX_CFG_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${ISOLINUX_CFG_FILE}
+exeCmd "scp ${GENERATED_FILES_DIRECTORY}/${ISOLINUX_CFG_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${ISOLINUX_CFG_FILE}"
 log "Copying custom kickstart file to target kickstart file..."
-scp ${GENERATED_FILES_DIRECTORY}/${KS_CFG_FILE}  ${ISO_UNPACK_DIRECTORY}/${KS_CFG_FILE}
+exeCmd "scp ${GENERATED_FILES_DIRECTORY}/${KS_CFG_FILE}  ${ISO_UNPACK_DIRECTORY}/${KS_CFG_FILE}"
 log "Generating kickstart ISO file..."
 push_dir ${ISO_UNPACK_DIRECTORY}
-genisoimage -o ${KICKSTART_ISO_FILE} -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -J -R -v -T -V "CentOS 7 x86_64" .  2>&1 | logPipe
+exeCmd "genisoimage -o ${KICKSTART_ISO_FILE} -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -J -R -v -T -V 'CentOS 7 x86_64' . "
 pop_dir
 log "Adding MD5 hash code to target ISO file."
-implantisomd5 ${KICKSTART_ISO_FILE} 2>&1 | logPipe
+exeCmd "implantisomd5 ${KICKSTART_ISO_FILE}"
 log "Finished creating custom ISO file: ${KICKSTART_ISO_FILE}"
 
 #::END::
