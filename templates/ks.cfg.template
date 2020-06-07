@@ -15,6 +15,12 @@ generate_KsCfg()
 	local _NETMASK=${8}
 	local _GATEWAY=${9}
 	local _NAMESERVERS=${10}
+	local _POWEROFF_AFTER_INSTALL=${11}
+	local _POWEROFF="reboot --eject"
+
+	if [[ "${_POWEROFF_AFTER_INSTALL}" == "true" ]]; then
+		_POWEROFF="poweroff"
+	fi
 
 	log "Generating ks.cfg file..."
 	log "    CentOS Ver   : ${_CENTOS_VERSION}"
@@ -27,6 +33,7 @@ generate_KsCfg()
 	log "    Netmask      : ${_NETMASK}"
 	log "    Gateway      : ${_GATEWAY}"
 	log "    Nameservers  : ${_NAMESERVERS}"
+	log "    Power off    : ${_POWEROFF}"
 	cat <<-EOF_1 > ${_KS_CFG_FILE}
 		# Kickstart file for CentOS ${_CENTOS_VERSION}
 
@@ -46,7 +53,7 @@ generate_KsCfg()
 		text
 
 		# Run the Setup Agent on first boot
-		firstboot --enable
+		firstboot --disable
 
 		# Only use SDA for target disk
 		ignoredisk --only-use=sda
@@ -124,8 +131,9 @@ generate_KsCfg()
 		%post 
 		%end
 
-		# For VM installation
-		reboot --eject
+		# Power off / Reboot
+		${_POWEROFF}
+
 		EOF_4
 		if (( $? )); then
 			abort "Failed to generate ks.cfg file."
