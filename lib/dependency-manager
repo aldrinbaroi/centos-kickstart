@@ -41,7 +41,7 @@ __loadDependencies()
             fi
         fi
         source "lib/${fileName}"
-    done < dependencies.list  
+    done < lib/dependencies.list  
     if (( $? )); then
         echo "Error loading dependencies"
         exit 1

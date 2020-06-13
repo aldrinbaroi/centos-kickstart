@@ -3,11 +3,11 @@
 # create-iso: Creates CentOS Kickstart ISO file from Cent0S 7 ISO file
 #
 
+source lib/dependency-manager
 source create-iso.conf
 source templates/grub.conf.template
 source templates/isolinux.cfg.template
 source templates/ks.cfg.template
-source dependency-manager
 
 clear
 log "Starting CentOS ${CENTOS_VERSION} Kickstart ISO generation process..."
@@ -23,6 +23,8 @@ readonly ISO_MOUNT_POINT=$(realpath "${WORK_DIRECTORY}/iso_mount_point")
 readonly SOURCE_IMAGE_FILE=$(realpath "${SOURCE_IMAGE_DIR}/${SOURCE_IMAGE_NAME}.iso")
 readonly KICKSTART_ISO_DIRECTORY=$(realpath "${WORK_DIRECTORY}/kickstart_iso")
 readonly KICKSTART_ISO_FILE=${KICKSTART_ISO_DIRECTORY}/${KICKSTART_IMAGE_NAME}.iso
+readonly CURRENT_USER=$(getCurrentUser)
+readonly CURRENT_USER_GROUP=$(getCurrentUserGroup)
 log ""
 log "Generated files directory: ${GENERATED_FILES_DIRECTORY}"
 log "ISO unpack directory     : ${ISO_UNPACK_DIRECTORY}"
@@ -58,12 +60,12 @@ log "Mounting ISO image file..."
 mountIso ${SOURCE_IMAGE_FILE} ${ISO_MOUNT_POINT}
 log "Copying files from source image file to work directory..."
 push_dir ${ISO_MOUNT_POINT} 
-exeCmd "${SUDO} scp -r . ${ISO_UNPACK_DIRECTORY}"
+exeCmd "$(SUDO) scp -r . ${ISO_UNPACK_DIRECTORY}"
 pop_dir
 log "Unmounting ISO image file..."
 unmount ${ISO_MOUNT_POINT}
 push_dir ${ISO_UNPACK_DIRECTORY} 
-exeCmd "${SUDO} chown -R ${CURRENT_USER}:${CURRENT_USER_GROUP} *"
+exeCmd "$(SUDO) chown -R ${CURRENT_USER}:${CURRENT_USER_GROUP} *"
 pop_dir
 log "Copying custom grub.conf file to target grub.conf file..."
 exeCmd "scp ${GENERATED_FILES_DIRECTORY}/${GRUB_CONF_FILE} ${ISO_UNPACK_DIRECTORY}/isolinux/${GRUB_CONF_FILE}"
